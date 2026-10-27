@@ -46,7 +46,7 @@ struct SettingsView: View {
                                 Spacer()
                                 if profile.id == model.currentProfileID {
                                     Image(systemName: "checkmark.circle.fill")
-                                        .foregroundStyle(.green)
+                                        .foregroundStyle(.blue)
                                 }
                             }
                         }
@@ -84,13 +84,13 @@ struct SettingsView: View {
                 }
 
                 Section("关于") {
-                    LabeledContent("版本", value: "1.5.0")
+                    LabeledContent("版本", value: "1.6.0")
                     LabeledContent("连接方式", value: "SSH 直连")
                     LabeledContent("OpenClash", value: model.openClash.installed ? "已安装" : "未检测到")
                 }
             }
             .scrollContentBackground(.hidden)
-            .listRowBackground(Rectangle().fill(Color(.secondarySystemGroupedBackground).opacity(0.82)))
+            .listRowBackground(Color(.secondarySystemGroupedBackground))
             .background(Color.clear)
             .navigationTitle("设置")
             .toolbarBackground(.hidden, for: .navigationBar)

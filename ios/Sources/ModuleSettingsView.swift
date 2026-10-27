@@ -27,7 +27,7 @@ struct ModuleSettingsView: View {
         }
         .environment(\.editMode, $editMode)
         .scrollContentBackground(.hidden)
-        .listRowBackground(Rectangle().fill(Color(.secondarySystemGroupedBackground).opacity(0.82)))
+        .listRowBackground(Color(.secondarySystemGroupedBackground))
         .background(Color.clear)
         .navigationTitle("概览模块")
         .toolbarBackground(.hidden, for: .navigationBar)

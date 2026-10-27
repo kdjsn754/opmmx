@@ -44,7 +44,7 @@ struct RootView: View {
             }
         }
         .preferredColorScheme(colorScheme)
-        .tint(.green)
+        .tint(.blue)
         .onChange(of: scenePhase) { _, phase in
             guard phase == .active else { return }
             Task { await model.resumeAfterForeground() }
@@ -75,8 +75,6 @@ struct MainTabs: View {
                 .tabItem { Label("设置", systemImage: "slider.horizontal.3") }
                 .tag(2)
         }
-        .toolbarBackground(.ultraThinMaterial, for: .tabBar)
-        .toolbarBackground(.visible, for: .tabBar)
     }
 }
 
@@ -94,11 +92,11 @@ struct LoginView: View {
                 HStack(spacing: 12) {
                     Image(systemName: "wifi.router.fill")
                         .font(.system(size: 30))
-                        .foregroundStyle(.green)
+                        .foregroundStyle(.blue)
                         .frame(width: 54, height: 54)
-                        .background(.ultraThinMaterial, in: Circle())
+                        .background(Color(.tertiarySystemFill), in: Circle())
                         .overlay {
-                            Circle().strokeBorder(.white.opacity(0.45), lineWidth: 1)
+                            Circle().strokeBorder(Color(.separator).opacity(0.6), lineWidth: 0.5)
                         }
                     VStack(alignment: .leading, spacing: 2) {
                         Text("OpenWrt 监控")

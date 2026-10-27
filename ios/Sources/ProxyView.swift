@@ -95,16 +95,16 @@ struct ProxyView: View {
                 .padding(.vertical, 9)
         }
         .buttonStyle(.plain)
-        .foregroundStyle(model.openClash.mode == value ? .green : .secondary)
+        .foregroundStyle(model.openClash.mode == value ? .blue : .secondary)
         .background(
-            model.openClash.mode == value ? Color.green.opacity(0.12) : Color(.tertiarySystemFill),
+            model.openClash.mode == value ? Color.blue.opacity(0.12) : Color(.tertiarySystemFill),
             in: RoundedRectangle(cornerRadius: 10)
         )
     }
 
     private var actionCard: some View {
         HStack(spacing: 10) {
-            actionButton(title: "启动", icon: "play.fill", color: .green, filled: true) {
+            actionButton(title: "启动", icon: "play.fill", color: .blue, filled: true) {
                 await model.startOpenClash()
             }
             actionButton(title: "关闭", icon: "power", color: .red, filled: false) {
@@ -137,7 +137,7 @@ struct ProxyView: View {
                         .fill(color)
                 } else {
                     RoundedRectangle(cornerRadius: 14, style: .continuous)
-                        .fill(.ultraThinMaterial)
+                        .fill(Color(.tertiarySystemFill))
                 }
             }
             .overlay {

@@ -44,7 +44,7 @@ struct OverviewView: View {
         HStack(spacing: 12) {
             Image(systemName: "wifi.router.fill")
                 .font(.system(size: 28))
-                .foregroundStyle(.green)
+                .foregroundStyle(.blue)
             VStack(alignment: .leading, spacing: 3) {
                 Text(model.routerInfo.model.isEmpty ? "OpenWrt" : model.routerInfo.model)
                     .font(.headline)
@@ -135,10 +135,18 @@ struct OverviewView: View {
             }
             if model.history.count > 1 {
                 Chart(model.history) { point in
-                    LineMark(x: .value("时间", point.date), y: .value("下载", point.download))
-                        .foregroundStyle(.blue)
-                    LineMark(x: .value("时间", point.date), y: .value("上传", point.upload))
-                        .foregroundStyle(.purple)
+                    LineMark(
+                        x: .value("时间", point.date),
+                        y: .value("下载", point.download),
+                        series: .value("方向", "下载")
+                    )
+                    .foregroundStyle(.blue)
+                    LineMark(
+                        x: .value("时间", point.date),
+                        y: .value("上传", point.upload),
+                        series: .value("方向", "上传")
+                    )
+                    .foregroundStyle(.purple)
                 }
                 .chartXAxis(.hidden)
                 .frame(height: 76)
@@ -251,7 +259,7 @@ struct OverviewView: View {
             HStack {
                 Text("\(model.devices.count)")
                     .font(.title.bold())
-                    .foregroundStyle(.green)
+                    .foregroundStyle(.blue)
                 Text("台设备")
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -317,13 +325,24 @@ struct OverviewView: View {
     }
 
     private var trendContent: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        let latest = model.history.last
+        let memory = latest?.memory ?? (model.memoryFraction * 100)
+        return VStack(alignment: .leading, spacing: 6) {
             if model.history.count > 1 {
                 Chart(model.history) { point in
-                    LineMark(x: .value("时间", point.date), y: .value("CPU", point.cpu))
-                        .foregroundStyle(.orange)
-                    LineMark(x: .value("时间", point.date), y: .value("内存", point.memory))
-                        .foregroundStyle(.blue)
+                    LineMark(
+                        x: .value("时间", point.date),
+                        y: .value("CPU", point.cpu),
+                        series: .value("指标", "CPU")
+                    )
+                    .foregroundStyle(.orange)
+
+                    LineMark(
+                        x: .value("时间", point.date),
+                        y: .value("内存", point.memory),
+                        series: .value("指标", "内存")
+                    )
+                    .foregroundStyle(.blue)
                 }
                 .chartYScale(domain: 0...100)
                 .chartXAxis(.hidden)
@@ -331,9 +350,11 @@ struct OverviewView: View {
             } else {
                 Text("正在采集…").font(.caption).foregroundStyle(.secondary)
             }
-            HStack {
-                Label("CPU", systemImage: "circle.fill").foregroundStyle(.orange)
-                Label("内存", systemImage: "circle.fill").foregroundStyle(.blue)
+            HStack(spacing: 14) {
+                Label(String(format: "CPU %.0f%%", latest?.cpu ?? 0), systemImage: "circle.fill")
+                    .foregroundStyle(.orange)
+                Label(String(format: "内存 %.0f%%", memory), systemImage: "circle.fill")
+                    .foregroundStyle(.blue)
             }
             .font(.caption2)
         }

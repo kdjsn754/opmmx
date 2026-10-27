@@ -210,9 +210,10 @@ final class AppModel: ObservableObject {
     }
 
     func resumeAfterForeground() async {
-        guard connected, let profile = currentProfile else { return }
+        guard connected, !reconnecting, let profile = currentProfile else { return }
         if let lastSuccessfulPoll,
            Date().timeIntervalSince(lastSuccessfulPoll) < 8 {
+            startPolling()
             return
         }
         guard let password = activePassword ?? KeychainStore.loadPassword(
