@@ -29,11 +29,20 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.catmint.openwrtmonitor
-        MARKETING_VERSION: 1.2.1
-        CURRENT_PROJECT_VERSION: 8
+        MARKETING_VERSION: 1.2.2
+        CURRENT_PROJECT_VERSION: 9
         SWIFT_VERSION: 5.9
         SWIFT_OBJC_BRIDGING_HEADER: Sources/OpenWrtMonitor-Bridging-Header.h
-        OTHER_LDFLAGS: -ObjC
+        OTHER_LDFLAGS:
+          - $(inherited)
+          - -ObjC
+          - -lssh2
+          - -lssl
+          - -lcrypto
+          - -lz
+        LIBRARY_SEARCH_PATHS:
+          - $(inherited)
+          - $(PODS_ROOT)/NMSSH/NMSSH-iOS/Libraries/lib
         HEADER_SEARCH_PATHS:
           - $(inherited)
           - $(SRCROOT)/Pods/Headers/Public/NMSSH
