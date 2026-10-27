@@ -17,6 +17,7 @@ enum AppError: LocalizedError {
 final class AppModel: ObservableObject {
     @Published var connected = false
     @Published var connecting = false
+    @Published var reconnecting = false
     @Published var busy = false
     @Published var status = "未连接"
     @Published var errorMessage: String?
@@ -38,6 +39,8 @@ final class AppModel: ObservableObject {
 
     private let ssh = SSHService()
     private var pollTask: Task<Void, Never>?
+    private var activePassword: String?
+    private var lastSuccessfulPoll: Date?
     private var lastCpuTotal: Double?
     private var lastCpuIdle: Double?
     private var lastRx: Double?
@@ -128,6 +131,8 @@ final class AppModel: ObservableObject {
             currentProfileID = profile.id
             connected = true
             connecting = false
+            activePassword = password
+            lastSuccessfulPoll = Date()
             status = "已连接"
             await refreshInfo()
             await refreshOpenClash()
@@ -185,8 +190,11 @@ final class AppModel: ObservableObject {
         pollTask = nil
         ssh.disconnect()
         connected = false
+        reconnecting = false
         busy = false
         connecting = false
+        activePassword = nil
+        lastSuccessfulPoll = nil
         status = "未连接"
         lastCpuTotal = nil
         lastCpuIdle = nil
@@ -198,6 +206,40 @@ final class AppModel: ObservableObject {
         lastOcTotal = nil
         if !keepPassword, let profile = currentProfile {
             KeychainStore.deletePassword(account: KeychainStore.passwordAccount(for: profile))
+        }
+    }
+
+    func resumeAfterForeground() async {
+        guard connected, let profile = currentProfile else { return }
+        if let lastSuccessfulPoll,
+           Date().timeIntervalSince(lastSuccessfulPoll) < 8 {
+            return
+        }
+        guard let password = activePassword ?? KeychainStore.loadPassword(
+            account: KeychainStore.passwordAccount(for: profile)
+        ) else {
+            return
+        }
+
+        reconnecting = true
+        do {
+            try await ssh.connect(
+                host: profile.host,
+                port: profile.port,
+                user: profile.user,
+                password: password
+            )
+            activePassword = password
+            await refreshInfo()
+            await refreshOpenClash()
+            await poll()
+            startPolling()
+            reconnecting = false
+            status = "已连接"
+        } catch {
+            reconnecting = false
+            status = "连接中断"
+            errorMessage = describe(error)
         }
     }
 
@@ -260,6 +302,7 @@ final class AppModel: ObservableObject {
                 await refreshOpenClash()
             }
             appendHistory()
+            lastSuccessfulPoll = Date()
             status = "已连接"
         } catch {
             status = "连接中断"

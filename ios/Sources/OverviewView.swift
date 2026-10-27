@@ -8,7 +8,7 @@ struct OverviewView: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(spacing: 14) {
+                LazyVStack(spacing: 14) {
                     header
                     ForEach(model.visibleModules) { module in
                         moduleView(module)

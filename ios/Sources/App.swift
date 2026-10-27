@@ -15,6 +15,7 @@ struct OpenWrtMonitorApp: App {
 
 struct RootView: View {
     @EnvironmentObject private var model: AppModel
+    @Environment(\.scenePhase) private var scenePhase
     @AppStorage("themeMode") private var themeMode = "system"
 
     var body: some View {
@@ -27,9 +28,27 @@ struct RootView: View {
                     LoginView()
                 }
             }
+            if model.reconnecting {
+                VStack {
+                    HStack(spacing: 8) {
+                        ProgressView()
+                        Text("正在恢复连接…")
+                            .font(.caption)
+                    }
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 9)
+                    .glassCard(padding: 0, cornerRadius: 18)
+                    .padding(.top, 8)
+                    Spacer()
+                }
+            }
         }
         .preferredColorScheme(colorScheme)
         .tint(.green)
+        .onChange(of: scenePhase) { _, phase in
+            guard phase == .active else { return }
+            Task { await model.resumeAfterForeground() }
+        }
     }
 
     private var colorScheme: ColorScheme? {

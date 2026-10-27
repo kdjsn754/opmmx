@@ -23,7 +23,7 @@ struct DeviceListView: View {
             }
         }
         .scrollContentBackground(.hidden)
-        .listRowBackground(Rectangle().fill(.ultraThinMaterial))
+        .listRowBackground(Rectangle().fill(Color(.secondarySystemGroupedBackground).opacity(0.82)))
         .background(Color.clear)
         .navigationTitle("连接设备")
         .navigationBarTitleDisplayMode(.inline)

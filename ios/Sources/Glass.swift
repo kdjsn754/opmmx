@@ -24,17 +24,25 @@ struct AppBackground: View {
                 endPoint: .bottomTrailing
             )
 
-            Circle()
-                .fill(Color.green.opacity(colorScheme == .dark ? 0.16 : 0.20))
-                .frame(width: 300, height: 300)
-                .blur(radius: 80)
-                .offset(x: -150, y: -300)
+            RadialGradient(
+                colors: [
+                    Color.green.opacity(colorScheme == .dark ? 0.18 : 0.22),
+                    Color.green.opacity(0)
+                ],
+                center: UnitPoint(x: 0.08, y: 0.06),
+                startRadius: 10,
+                endRadius: 420
+            )
 
-            Circle()
-                .fill(Color.cyan.opacity(colorScheme == .dark ? 0.13 : 0.16))
-                .frame(width: 340, height: 340)
-                .blur(radius: 95)
-                .offset(x: 170, y: 330)
+            RadialGradient(
+                colors: [
+                    Color.cyan.opacity(colorScheme == .dark ? 0.14 : 0.18),
+                    Color.cyan.opacity(0)
+                ],
+                center: UnitPoint(x: 0.92, y: 0.90),
+                startRadius: 10,
+                endRadius: 480
+            )
         }
         .ignoresSafeArea()
     }
@@ -49,7 +57,9 @@ struct GlassCardModifier: ViewModifier {
         content
             .padding(padding)
             .background(
-                .ultraThinMaterial,
+                colorScheme == .dark
+                    ? Color(red: 0.055, green: 0.10, blue: 0.16).opacity(0.86)
+                    : Color.white.opacity(0.72),
                 in: RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
             )
             .overlay {
@@ -57,8 +67,8 @@ struct GlassCardModifier: ViewModifier {
                     .strokeBorder(
                         LinearGradient(
                             colors: [
-                                .white.opacity(colorScheme == .dark ? 0.32 : 0.80),
-                                .white.opacity(colorScheme == .dark ? 0.06 : 0.18)
+                                .white.opacity(colorScheme == .dark ? 0.32 : 0.86),
+                                .white.opacity(colorScheme == .dark ? 0.06 : 0.16)
                             ],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
@@ -67,10 +77,10 @@ struct GlassCardModifier: ViewModifier {
                     )
             }
             .shadow(
-                color: .black.opacity(colorScheme == .dark ? 0.28 : 0.10),
-                radius: 22,
+                color: .black.opacity(colorScheme == .dark ? 0.22 : 0.07),
+                radius: 12,
                 x: 0,
-                y: 10
+                y: 6
             )
     }
 }
