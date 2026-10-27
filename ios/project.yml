@@ -6,12 +6,17 @@ options:
   projectFormat: xcode15_3
   xcodeVersion: "15.4"
   createIntermediateGroups: true
+packages:
+  SSH2:
+    path: Packages/libssh2-apple
 targets:
   OpenWrtMonitor:
     type: application
     platform: iOS
     sources:
       - path: Sources
+    dependencies:
+      - package: SSH2
     info:
       path: Sources/Info.plist
       properties:
@@ -29,23 +34,9 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.catmint.openwrtmonitor
-        MARKETING_VERSION: 1.2.2
-        CURRENT_PROJECT_VERSION: 9
+        MARKETING_VERSION: 1.3.0
+        CURRENT_PROJECT_VERSION: 10
         SWIFT_VERSION: 5.9
-        SWIFT_OBJC_BRIDGING_HEADER: Sources/OpenWrtMonitor-Bridging-Header.h
-        OTHER_LDFLAGS:
-          - $(inherited)
-          - -ObjC
-          - -lssh2
-          - -lssl
-          - -lcrypto
-          - -lz
-        LIBRARY_SEARCH_PATHS:
-          - $(inherited)
-          - $(PODS_ROOT)/NMSSH/NMSSH-iOS/Libraries/lib
-        HEADER_SEARCH_PATHS:
-          - $(inherited)
-          - $(SRCROOT)/Pods/Headers/Public/NMSSH
         IPHONEOS_DEPLOYMENT_TARGET: 17.0
         CODE_SIGN_STYLE: Manual
         CODE_SIGNING_ALLOWED: NO

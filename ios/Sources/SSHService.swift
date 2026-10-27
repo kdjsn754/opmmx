@@ -1,5 +1,6 @@
 import Foundation
 import Darwin
+import SSH2
 
 /// Small libssh2 wrapper. NMSSH's CFSocket connection path does not work
 /// reliably on current iOS releases, so this uses a normal BSD socket and

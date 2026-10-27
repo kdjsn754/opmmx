@@ -7,16 +7,10 @@ if ! command -v xcodegen >/dev/null 2>&1; then
   exit 1
 fi
 
-if ! command -v pod >/dev/null 2>&1; then
-  echo "请先安装 CocoaPods：brew install cocoapods"
-  exit 1
-fi
-
 xcodegen generate
-pod install --repo-update
 
 xcodebuild archive \
-  -workspace OpenWrtMonitor.xcworkspace \
+  -project OpenWrtMonitor.xcodeproj \
   -scheme OpenWrtMonitor \
   -configuration Release \
   -sdk iphoneos \

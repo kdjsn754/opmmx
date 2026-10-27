@@ -46,11 +46,10 @@ IPA 需要 macOS + Xcode + Apple 签名。当前仓库提供 GitHub Actions 的�
 ### Mac 本地
 
 ```bash
-brew install xcodegen cocoapods
+brew install xcodegen
 cd ios
 xcodegen generate
-pod install
-open OpenWrtMonitor.xcworkspace
+open OpenWrtMonitor.xcodeproj
 ```
 
 或在 `ios/` 下运行：
@@ -66,9 +65,8 @@ chmod +x build-unsigned-ipa.sh
 
 - iOS 17+
 - Xcode 15+
-- [NMSSH](https://github.com/NMSSH/NMSSH)：基于 libssh2 的 SSH 客户端，兼容 OpenWrt Dropbear
+- [libssh2-apple](https://github.com/mfcollins3/libssh2-apple)：libssh2 1.10+，兼容 OpenWrt Dropbear
 - XcodeGen
-- CocoaPods
 
 ## 说明
 
