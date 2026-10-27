@@ -29,8 +29,8 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.catmint.openwrtmonitor
-        MARKETING_VERSION: 1.1.0
-        CURRENT_PROJECT_VERSION: 5
+        MARKETING_VERSION: 1.1.1
+        CURRENT_PROJECT_VERSION: 6
         SWIFT_VERSION: 5.9
         SWIFT_OBJC_BRIDGING_HEADER: Sources/OpenWrtMonitor-Bridging-Header.h
         OTHER_LDFLAGS: -ObjC
