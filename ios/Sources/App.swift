@@ -116,6 +116,7 @@ struct LoginView: View {
                 ))
 
                 Button {
+                    LocalNetworkPermission.shared.request()
                     Task {
                         await model.connect(
                             host: host,
@@ -152,6 +153,7 @@ struct LoginView: View {
         .task {
             guard !didAutoConnect else { return }
             didAutoConnect = true
+            LocalNetworkPermission.shared.request()
             if let profile = model.currentProfile {
                 host = profile.host
                 port = String(profile.port)

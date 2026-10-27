@@ -148,8 +148,13 @@ final class AppModel: ObservableObject {
             connected = false
             connecting = false
             status = "连接失败"
-            errorMessage = error.localizedDescription
+            errorMessage = describe(error)
         }
+    }
+
+    private func describe(_ error: Error) -> String {
+        let ns = error as NSError
+        return "\(ns.localizedDescription)\n[\(ns.domain) \(ns.code)]\n\(String(describing: error))"
     }
 
     func autoConnectIfPossible() async {

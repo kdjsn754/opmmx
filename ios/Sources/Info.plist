@@ -22,6 +22,10 @@
     <true/>
     <key>NSLocalNetworkUsageDescription</key>
     <string>用于通过 SSH 连接局域网内的 OpenWrt 路由器</string>
+    <key>NSBonjourServices</key>
+    <array>
+        <string>_ssh._tcp</string>
+    </array>
     <key>NSAppTransportSecurity</key>
     <dict>
         <key>NSAllowsArbitraryLoads</key>
