@@ -386,5 +386,4 @@ extension View {
     func cardStyle() -> some View {
         glassCard(padding: 14, cornerRadius: 22)
     }
-    }
 }
