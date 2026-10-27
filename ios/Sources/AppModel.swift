@@ -133,7 +133,11 @@ final class AppModel: ObservableObject {
                 },
                 hostKeyValidator: SSHHostKeyValidator.acceptAnything()
             )
-            settings.algorithms = .all
+            var algorithms = SSHAlgorithms()
+            algorithms.keyExchangeAlgorithms = .replace(
+                with: [DiffieHellmanGroup14Sha256.self]
+            )
+            settings.algorithms = algorithms
             let newClient = try await SSHClient.connect(to: settings)
             client = newClient
             currentProfileID = profile.id
