@@ -66,7 +66,7 @@ struct OverviewView: View {
         case .speed:
             moduleCard(module) { speedContent }
         case .resources:
-            moduleCard(module) { resourcesContent }
+            resourcesCards
         case .hardware:
             moduleCard(module) { hardwareContent }
         case .devices:
@@ -169,51 +169,31 @@ struct OverviewView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    private var resourcesContent: some View {
-        HStack(spacing: 12) {
-            resourceTile(
+    private var resourcesCards: some View {
+        HStack(alignment: .top, spacing: 12) {
+            ResourceRingCard(
                 title: "CPU",
-                value: String(format: "%.0f%%", model.stats.cpu),
-                detail: "\(model.routerInfo.cpuModel)",
-                fraction: model.stats.cpu / 100,
-                color: .orange
+                icon: "cpu",
+                accent: .orange,
+                percent: model.stats.cpu,
+                topRight: model.routerInfo.cpuCores > 0
+                    ? "\(model.routerInfo.cpuCores) 核" : "-- 核",
+                bottom: String(
+                    format: "负载 %.2f / %.2f / %.2f",
+                    model.stats.load,
+                    model.stats.load5,
+                    model.stats.load15
+                )
             )
-            resourceTile(
+            ResourceRingCard(
                 title: "内存",
-                value: formatBytes(Double(model.stats.memoryUsed)),
-                detail: "共 \(formatBytes(Double(model.stats.memoryTotal)))",
-                fraction: model.memoryFraction,
-                color: .blue
+                icon: "memorychip",
+                accent: .indigo,
+                percent: model.memoryFraction * 100,
+                topRight: "可用 \(formatBytes(Double(max(0, model.stats.memoryTotal - model.stats.memoryUsed))))",
+                bottom: "\(formatBytes(Double(model.stats.memoryUsed))) / \(formatBytes(Double(model.stats.memoryTotal)))"
             )
         }
-    }
-
-    private func resourceTile(
-        title: String,
-        value: String,
-        detail: String,
-        fraction: Double,
-        color: Color
-    ) -> some View {
-        VStack(alignment: .leading, spacing: 7) {
-            Text(title)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-            Text(value)
-                .font(.title3.bold())
-                .foregroundStyle(color)
-                .lineLimit(1)
-                .minimumScaleFactor(0.65)
-            ProgressView(value: max(0, min(1, fraction)))
-                .tint(color)
-            Text(detail.isEmpty ? "--" : detail)
-                .font(.caption2)
-                .foregroundStyle(.secondary)
-                .lineLimit(1)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(12)
-        .background(Color(.tertiarySystemFill), in: RoundedRectangle(cornerRadius: 12))
     }
 
     private var hardwareContent: some View {
@@ -394,6 +374,81 @@ struct InfoRow: View {
                 .minimumScaleFactor(0.8)
         }
         .padding(.vertical, 9)
+    }
+}
+
+private struct ResourceRingCard: View {
+    let title: String
+    let icon: String
+    let accent: Color
+    let percent: Double
+    let topRight: String
+    let bottom: String
+
+    var body: some View {
+        VStack(spacing: 10) {
+            HStack(spacing: 5) {
+                Image(systemName: icon)
+                    .font(.caption)
+                    .foregroundStyle(accent)
+                Text(title)
+                    .font(.subheadline.weight(.semibold))
+                Spacer(minLength: 4)
+                Text(topRight)
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
+            }
+
+            RingGauge(percent: percent, accent: accent)
+
+            Text(bottom)
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+                .minimumScaleFactor(0.6)
+        }
+        .frame(maxWidth: .infinity)
+        .glassCard(padding: 11, cornerRadius: 16)
+    }
+}
+
+private struct RingGauge: View {
+    let percent: Double
+    let accent: Color
+
+    private var value: Double {
+        guard percent.isFinite else { return 0 }
+        return max(0, min(100, percent))
+    }
+
+    var body: some View {
+        ZStack {
+            Circle()
+                .stroke(Color(.systemGray5), lineWidth: 10)
+
+            Circle()
+                .trim(from: 0, to: value / 100)
+                .stroke(
+                    accent,
+                    style: StrokeStyle(lineWidth: 10, lineCap: .round)
+                )
+                .rotationEffect(.degrees(-90))
+                .shadow(color: accent.opacity(0.25), radius: 4)
+
+            VStack(spacing: 1) {
+                Text(String(format: "%.0f%%", value))
+                    .font(.system(size: 27, weight: .semibold, design: .rounded))
+                    .monospacedDigit()
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.75)
+                Text("占用")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .frame(width: 112, height: 112)
     }
 }
 

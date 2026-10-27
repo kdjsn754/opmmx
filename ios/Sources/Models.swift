@@ -92,6 +92,8 @@ struct OverviewStats {
     var sessionUpload: Double = 0
     var uptime: Double = 0
     var load: Double = 0
+    var load5: Double = 0
+    var load15: Double = 0
     var temperature: Double?
     var fanRPM: Double?
     var wanDevice = ""
@@ -104,6 +106,7 @@ struct RouterInfo {
     var firmware = ""
     var kernel = ""
     var cpuModel = ""
+    var cpuCores = 0
     var load = ""
 }
 

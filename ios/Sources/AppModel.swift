@@ -319,10 +319,12 @@ final class AppModel: ObservableObject {
                let uptime = Double(value) {
                 stats.uptime = uptime
             }
-            if let value = firstLine(sections["LOAD"]).split(separator: " ").first,
-               let load = Double(value) {
-                stats.load = load
-            }
+            let loadValues = firstLine(sections["LOAD"])
+                .split(separator: " ")
+                .compactMap { Double($0) }
+            if loadValues.count >= 1 { stats.load = loadValues[0] }
+            if loadValues.count >= 2 { stats.load5 = loadValues[1] }
+            if loadValues.count >= 3 { stats.load15 = loadValues[2] }
             updateSensors(temp: sections["TEMP"] ?? "", fan: sections["FAN"] ?? "")
             updateDevices(sections["LEASES"] ?? "")
             updatePorts(ports: sections["PORTS"] ?? "", brif: sections["BRIF"] ?? "")
@@ -353,6 +355,7 @@ final class AppModel: ObservableObject {
             value.kernel = firstLine(sections["KERNEL"])
             value.architecture = firstLine(sections["ARCH"])
             value.cpuModel = parseCPUModel(sections["CPUINFO"] ?? "")
+            value.cpuCores = parseCPUCores(sections["CPUINFO"] ?? "")
             let release = sections["RELEASE"] ?? ""
             value.firmware = parseRelease(release)
             if let load = firstLine(sections["LOAD"]).split(separator: " ").first {
@@ -698,6 +701,14 @@ final class AppModel: ObservableObject {
             }
         }
         return fallback
+    }
+
+    private func parseCPUCores(_ text: String) -> Int {
+        let count = text
+            .split(separator: "\n")
+            .filter { $0.lowercased().hasPrefix("processor") }
+            .count
+        return count
     }
 
     private func parseRelease(_ text: String) -> String {
