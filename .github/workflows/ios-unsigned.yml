@@ -18,19 +18,16 @@ jobs:
             echo "找不到 project.yml，请确认仓库结构" >&2
             exit 1
           fi
-      - name: Install XcodeGen and CocoaPods
-        run: brew install xcodegen cocoapods
+      - name: Install XcodeGen
+        run: brew install xcodegen
       - name: Generate Xcode project
         working-directory: ${{ env.IOS_DIR }}
         run: xcodegen generate
-      - name: Install CocoaPods dependencies
-        working-directory: ${{ env.IOS_DIR }}
-        run: pod install --repo-update
       - name: Archive unsigned app
         working-directory: ${{ env.IOS_DIR }}
         run: |
           xcodebuild archive \
-            -workspace OpenWrtMonitor.xcworkspace \
+            -project OpenWrtMonitor.xcodeproj \
             -scheme OpenWrtMonitor \
             -configuration Release \
             -sdk iphoneos \
