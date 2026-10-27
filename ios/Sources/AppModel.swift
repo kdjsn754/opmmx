@@ -245,7 +245,7 @@ final class AppModel: ObservableObject {
     func poll() async {
         guard connected else { return }
         do {
-            let sections = parseSections(await execute(pollCommand))
+            let sections = parseSections(try execute(pollCommand))
             updateCPU(sections["STAT"] ?? "")
             updateMemory(sections["MEM"] ?? "")
             stats.wanDevice = parseWan(sections["ROUTE"] ?? "")
@@ -277,7 +277,7 @@ final class AppModel: ObservableObject {
 
     func refreshInfo() async {
         do {
-            let sections = parseSections(await execute(infoCommand))
+            let sections = parseSections(try execute(infoCommand))
             var value = RouterInfo()
             value.model = firstLine(sections["MODEL"])
             value.hostname = firstLine(sections["HOST"])
@@ -298,7 +298,7 @@ final class AppModel: ObservableObject {
 
     func refreshOpenClash() async {
         do {
-            let sections = parseSections(await execute(openClashCommand))
+            let sections = parseSections(try execute(openClashCommand))
             openClash = parseOpenClashInfo(sections, current: openClash)
         } catch {
             errorMessage = error.localizedDescription
@@ -378,7 +378,7 @@ final class AppModel: ObservableObject {
         busy = true
         defer { busy = false }
         do {
-            let sections = parseSections(await execute(accessCommand))
+            let sections = parseSections(try execute(accessCommand))
             var results: [AccessCheck.Site: (Bool, Int)] = [:]
             for line in (sections["CHECK"] ?? "").split(separator: "\n") {
                 let fields = line.split(separator: "\t").map(String.init)
