@@ -30,28 +30,31 @@ final class SSHService {
                 var address = sockaddr_in()
                 address.sin_family = sa_family_t(AF_INET)
                 address.sin_port = in_port_t(UInt16(port).bigEndian)
-                guard inet_pton(AF_INET, host, &address.sin_addr) == 1 else {
-                    close(fd)
+                let parsed = host.withCString { pointer in
+                    inet_pton(AF_INET, pointer, &address.sin_addr)
+                }
+                guard parsed == 1 else {
+                    Darwin.close(fd)
                     continuation.resume(throwing: AppError.message("路由器地址不是有效的 IPv4"))
                     return
                 }
 
                 let connectResult = withUnsafePointer(to: &address) { pointer in
                     pointer.withMemoryRebound(to: sockaddr.self, capacity: 1) {
-                        connect(fd, $0, socklen_t(MemoryLayout<sockaddr_in>.size))
+                        Darwin.connect(fd, $0, socklen_t(MemoryLayout<sockaddr_in>.size))
                     }
                 }
                 guard connectResult == 0 else {
                     let code = errno
-                    close(fd)
+                    Darwin.close(fd)
                     continuation.resume(throwing: AppError.message(
                         "TCP 连接失败：\(String(cString: strerror(code)))（errno \(code)）"
                     ))
                     return
                 }
 
-                guard let ssh = libssh2_session_init() else {
-                    close(fd)
+                guard let ssh = libssh2_session_init_ex(nil, nil, nil, nil) else {
+                    Darwin.close(fd)
                     continuation.resume(throwing: AppError.message("libssh2 初始化失败"))
                     return
                 }
@@ -60,21 +63,32 @@ final class SSHService {
                 guard libssh2_session_handshake(ssh, fd) == 0 else {
                     let message = Self.lastError(ssh)
                     libssh2_session_free(ssh)
-                    close(fd)
+                    Darwin.close(fd)
                     continuation.resume(throwing: AppError.message("SSH 握手失败：\(message)"))
                     return
                 }
 
                 let authResult = user.withCString { userPointer in
                     password.withCString { passwordPointer in
-                        libssh2_userauth_password(ssh, userPointer, passwordPointer)
+                        libssh2_userauth_password_ex(
+                            ssh,
+                            userPointer,
+                            UInt32(user.utf8.count),
+                            passwordPointer,
+                            UInt32(password.utf8.count),
+                            nil
+                        )
                     }
                 }
                 guard authResult == 0 else {
                     let message = Self.lastError(ssh)
-                    libssh2_session_disconnect(ssh, "auth failed")
+                    "auth failed".withCString { description in
+                        "".withCString { language in
+                            libssh2_session_disconnect_ex(ssh, 11, description, language)
+                        }
+                    }
                     libssh2_session_free(ssh)
-                    close(fd)
+                    Darwin.close(fd)
                     continuation.resume(throwing: AppError.message("SSH 密码认证失败：\(message)"))
                     return
                 }
@@ -93,7 +107,17 @@ final class SSHService {
                     continuation.resume(throwing: AppError.notConnected)
                     return
                 }
-                guard let channel = libssh2_channel_open_session(session) else {
+                guard let channel = "session".withCString({ channelType in
+                    libssh2_channel_open_ex(
+                        session,
+                        channelType,
+                        7,
+                        2 * 1024 * 1024,
+                        32768,
+                        nil,
+                        0
+                    )
+                }) else {
                     continuation.resume(throwing: AppError.message(
                         "打开 SSH 通道失败：\(Self.lastError(session))"
                     ))
@@ -103,7 +127,15 @@ final class SSHService {
                     libssh2_channel_free(channel)
                 }
                 let execResult = command.withCString { pointer in
-                    libssh2_channel_exec(channel, pointer)
+                    "exec".withCString { request in
+                        libssh2_channel_process_startup(
+                            channel,
+                            request,
+                            4,
+                            pointer,
+                            UInt32(command.utf8.count)
+                        )
+                    }
                 }
                 guard execResult == 0 else {
                     continuation.resume(throwing: AppError.message(
@@ -116,13 +148,18 @@ final class SSHService {
                 var buffer = [CChar](repeating: 0, count: 16 * 1024)
                 while true {
                     let read = buffer.withUnsafeMutableBufferPointer { pointer in
-                        libssh2_channel_read(channel, pointer.baseAddress, pointer.count)
+                        libssh2_channel_read_ex(
+                            channel,
+                            0,
+                            pointer.baseAddress,
+                            pointer.count
+                        )
                     }
                     if read > 0 {
                         output.append(contentsOf: buffer.prefix(read).map { UInt8(bitPattern: $0) })
                     } else if read == 0 {
                         break
-                    } else if read == Int32(LIBSSH2_ERROR_EAGAIN) {
+                    } else if read == Int(LIBSSH2_ERROR_EAGAIN) {
                         continue
                     } else {
                         continuation.resume(throwing: AppError.message(
@@ -144,12 +181,16 @@ final class SSHService {
 
     private func closeLocked() {
         if let session {
-            libssh2_session_disconnect(session, "bye")
+            "bye".withCString { description in
+                "".withCString { language in
+                    libssh2_session_disconnect_ex(session, 11, description, language)
+                }
+            }
             libssh2_session_free(session)
             self.session = nil
         }
         if socketFD >= 0 {
-            close(socketFD)
+            Darwin.close(socketFD)
             socketFD = -1
         }
     }
