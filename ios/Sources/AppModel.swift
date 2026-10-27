@@ -1,7 +1,5 @@
 import Foundation
 import SwiftUI
-import Citadel
-import NIOCore
 
 enum AppError: LocalizedError {
     case notConnected
@@ -38,7 +36,7 @@ final class AppModel: ObservableObject {
         didSet { UserDefaults.standard.set(autoLogin, forKey: "autoLogin") }
     }
 
-    private var client: SSHClient?
+    private let ssh = SSHService()
     private var pollTask: Task<Void, Never>?
     private var lastCpuTotal: Double?
     private var lastCpuIdle: Double?
@@ -121,25 +119,12 @@ final class AppModel: ObservableObject {
         errorMessage = nil
         status = "正在连接…"
         do {
-            let username = profile.user
-            var settings = SSHClientSettings(
+            try await ssh.connect(
                 host: profile.host,
                 port: profile.port,
-                authenticationMethod: {
-                    SSHAuthenticationMethod.passwordBased(
-                        username: username,
-                        password: password
-                    )
-                },
-                hostKeyValidator: SSHHostKeyValidator.acceptAnything()
+                user: profile.user,
+                password: password
             )
-            var algorithms = SSHAlgorithms()
-            algorithms.keyExchangeAlgorithms = .replace(
-                with: [DiffieHellmanGroup14Sha256.self]
-            )
-            settings.algorithms = algorithms
-            let newClient = try await SSHClient.connect(to: settings)
-            client = newClient
             currentProfileID = profile.id
             connected = true
             connecting = false
@@ -149,7 +134,6 @@ final class AppModel: ObservableObject {
             await poll()
             startPolling()
         } catch {
-            client = nil
             connected = false
             connecting = false
             status = "连接失败"
@@ -199,8 +183,7 @@ final class AppModel: ObservableObject {
     func disconnect(keepPassword: Bool = false) async {
         pollTask?.cancel()
         pollTask = nil
-        if let client { try? await client.close() }
-        client = nil
+        ssh.disconnect()
         connected = false
         busy = false
         connecting = false
@@ -236,9 +219,7 @@ final class AppModel: ObservableObject {
     // MARK: - SSH
 
     func execute(_ command: String) async throws -> String {
-        guard let client else { throw AppError.notConnected }
-        let buffer = try await client.executeCommand(command)
-        return String(decoding: Data(buffer.readableBytesView), as: UTF8.self)
+        try await ssh.execute(command)
     }
 
     private func startPolling() {

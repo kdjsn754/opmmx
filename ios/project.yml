@@ -6,10 +6,6 @@ options:
   projectFormat: xcode15_3
   xcodeVersion: "15.4"
   createIntermediateGroups: true
-packages:
-  Citadel:
-    url: https://github.com/orlandos-nl/Citadel.git
-    branch: main
 targets:
   OpenWrtMonitor:
     type: application
@@ -33,9 +29,11 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.catmint.openwrtmonitor
-        MARKETING_VERSION: 1.0.3
-        CURRENT_PROJECT_VERSION: 4
+        MARKETING_VERSION: 1.1.0
+        CURRENT_PROJECT_VERSION: 5
         SWIFT_VERSION: 5.9
+        SWIFT_OBJC_BRIDGING_HEADER: Sources/OpenWrtMonitor-Bridging-Header.h
+        OTHER_LDFLAGS: -ObjC
         IPHONEOS_DEPLOYMENT_TARGET: 17.0
         CODE_SIGN_STYLE: Manual
         CODE_SIGNING_ALLOWED: NO
@@ -44,8 +42,6 @@ targets:
         TARGETED_DEVICE_FAMILY: "1"
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
-    dependencies:
-      - package: Citadel
 schemes:
   OpenWrtMonitor:
     build:
