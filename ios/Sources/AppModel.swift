@@ -122,7 +122,7 @@ final class AppModel: ObservableObject {
         status = "正在连接…"
         do {
             let username = profile.user
-            let settings = SSHClientSettings(
+            var settings = SSHClientSettings(
                 host: profile.host,
                 port: profile.port,
                 authenticationMethod: {
@@ -133,6 +133,7 @@ final class AppModel: ObservableObject {
                 },
                 hostKeyValidator: SSHHostKeyValidator.acceptAnything()
             )
+            settings.algorithms = .all
             let newClient = try await SSHClient.connect(to: settings)
             client = newClient
             currentProfileID = profile.id
