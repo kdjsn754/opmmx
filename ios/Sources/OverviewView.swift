@@ -22,20 +22,14 @@ struct OverviewView: View {
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
-                        Task {
-                            await model.refreshInfo()
-                            await model.refreshOpenClash()
-                            await model.poll()
-                        }
+                        Task { await model.manualRefresh() }
                     } label: {
                         Image(systemName: "arrow.clockwise")
                     }
                 }
             }
             .refreshable {
-                await model.refreshInfo()
-                await model.refreshOpenClash()
-                await model.poll()
+                await model.manualRefresh()
             }
         }
     }

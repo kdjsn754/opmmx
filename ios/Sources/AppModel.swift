@@ -41,6 +41,7 @@ final class AppModel: ObservableObject {
     private var pollTask: Task<Void, Never>?
     private var activePassword: String?
     private var lastSuccessfulPoll: Date?
+    private var lastReconnectAttempt: Date?
     private var lastCpuTotal: Double?
     private var lastCpuIdle: Double?
     private var lastRx: Double?
@@ -133,6 +134,7 @@ final class AppModel: ObservableObject {
             connecting = false
             activePassword = password
             lastSuccessfulPoll = Date()
+            lastReconnectAttempt = nil
             status = "已连接"
             await refreshInfo()
             await refreshOpenClash()
@@ -195,6 +197,7 @@ final class AppModel: ObservableObject {
         connecting = false
         activePassword = nil
         lastSuccessfulPoll = nil
+        lastReconnectAttempt = nil
         status = "未连接"
         lastCpuTotal = nil
         lastCpuIdle = nil
@@ -210,10 +213,31 @@ final class AppModel: ObservableObject {
     }
 
     func resumeAfterForeground() async {
-        guard connected, !reconnecting, let profile = currentProfile else { return }
+        guard connected else { return }
         if let lastSuccessfulPoll,
            Date().timeIntervalSince(lastSuccessfulPoll) < 8 {
             startPolling()
+            return
+        }
+        await reconnect(force: true)
+    }
+
+    func manualRefresh() async {
+        guard connected else { return }
+        if status == "连接中断" || reconnecting ||
+            (lastSuccessfulPoll.map { Date().timeIntervalSince($0) > 8 } ?? true) {
+            await reconnect(force: true)
+            return
+        }
+        await refreshInfo()
+        await refreshOpenClash()
+        await poll()
+    }
+
+    func reconnect(force: Bool) async {
+        guard !reconnecting, let profile = currentProfile else { return }
+        if !force, let lastReconnectAttempt,
+           Date().timeIntervalSince(lastReconnectAttempt) < 5 {
             return
         }
         guard let password = activePassword ?? KeychainStore.loadPassword(
@@ -222,6 +246,7 @@ final class AppModel: ObservableObject {
             return
         }
 
+        lastReconnectAttempt = Date()
         reconnecting = true
         do {
             try await ssh.connect(
@@ -231,16 +256,22 @@ final class AppModel: ObservableObject {
                 password: password
             )
             activePassword = password
+            connected = true
             await refreshInfo()
             await refreshOpenClash()
             await poll()
             startPolling()
             reconnecting = false
+            lastReconnectAttempt = nil
             status = "已连接"
+            errorMessage = nil
         } catch {
             reconnecting = false
             status = "连接中断"
             errorMessage = describe(error)
+            if connected {
+                startPolling()
+            }
         }
     }
 
@@ -307,6 +338,9 @@ final class AppModel: ObservableObject {
             status = "已连接"
         } catch {
             status = "连接中断"
+            if !reconnecting, activePassword != nil {
+                Task { await self.reconnect(force: false) }
+            }
         }
     }
 

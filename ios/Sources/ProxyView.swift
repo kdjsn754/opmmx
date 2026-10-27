@@ -22,13 +22,13 @@ struct ProxyView: View {
             .background(Color.clear)
             .navigationTitle("网络代理")
             .toolbarBackground(.hidden, for: .navigationBar)
+            .refreshable {
+                await model.manualRefresh()
+            }
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
-                        Task {
-                            await model.refreshOpenClash()
-                            await model.refreshOpenClashMetrics()
-                        }
+                        Task { await model.manualRefresh() }
                     } label: {
                         Image(systemName: "arrow.clockwise")
                     }

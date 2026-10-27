@@ -22,7 +22,7 @@ final class SSHService {
                     return
                 }
 
-                var timeout = timeval(tv_sec: 10, tv_usec: 0)
+                var timeout = timeval(tv_sec: 5, tv_usec: 0)
                 setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, &timeout,
                            socklen_t(MemoryLayout<timeval>.size))
                 setsockopt(fd, SOL_SOCKET, SO_SNDTIMEO, &timeout,
@@ -181,6 +181,9 @@ final class SSHService {
     }
 
     private func closeLocked() {
+        if socketFD >= 0 {
+            Darwin.shutdown(socketFD, SHUT_RDWR)
+        }
         if let session {
             "bye".withCString { description in
                 "".withCString { language in
