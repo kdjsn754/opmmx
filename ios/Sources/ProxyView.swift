@@ -19,8 +19,9 @@ struct ProxyView: View {
                 }
                 .padding(16)
             }
-            .background(Color(.systemGroupedBackground))
+            .background(Color.clear)
             .navigationTitle("网络代理")
+            .toolbarBackground(.hidden, for: .navigationBar)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
@@ -130,8 +131,20 @@ struct ProxyView: View {
             .frame(maxWidth: .infinity)
             .padding(.vertical, 12)
             .foregroundStyle(filled ? .white : color)
-            .background(filled ? color : color.opacity(0.10),
-                        in: RoundedRectangle(cornerRadius: 14))
+            .background {
+                if filled {
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .fill(color)
+                } else {
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .fill(.ultraThinMaterial)
+                }
+            }
+            .overlay {
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .strokeBorder(.white.opacity(filled ? 0.30 : 0.38), lineWidth: 1)
+            }
+            .shadow(color: color.opacity(filled ? 0.20 : 0.05), radius: 10, y: 5)
         }
         .buttonStyle(.plain)
     }

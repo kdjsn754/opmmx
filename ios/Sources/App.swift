@@ -18,11 +18,14 @@ struct RootView: View {
     @AppStorage("themeMode") private var themeMode = "system"
 
     var body: some View {
-        Group {
-            if model.connected {
-                MainTabs()
-            } else {
-                LoginView()
+        ZStack {
+            AppBackground()
+            Group {
+                if model.connected {
+                    MainTabs()
+                } else {
+                    LoginView()
+                }
             }
         }
         .preferredColorScheme(colorScheme)
@@ -53,6 +56,8 @@ struct MainTabs: View {
                 .tabItem { Label("设置", systemImage: "slider.horizontal.3") }
                 .tag(2)
         }
+        .toolbarBackground(.ultraThinMaterial, for: .tabBar)
+        .toolbarBackground(.visible, for: .tabBar)
     }
 }
 
@@ -69,8 +74,13 @@ struct LoginView: View {
             VStack(alignment: .leading, spacing: 18) {
                 HStack(spacing: 12) {
                     Image(systemName: "wifi.router.fill")
-                        .font(.system(size: 34))
+                        .font(.system(size: 30))
                         .foregroundStyle(.green)
+                        .frame(width: 54, height: 54)
+                        .background(.ultraThinMaterial, in: Circle())
+                        .overlay {
+                            Circle().strokeBorder(.white.opacity(0.45), lineWidth: 1)
+                        }
                     VStack(alignment: .leading, spacing: 2) {
                         Text("OpenWrt 监控")
                             .font(.title2.bold())
@@ -79,7 +89,7 @@ struct LoginView: View {
                             .foregroundStyle(.secondary)
                     }
                 }
-                .padding(.top, 30)
+                .padding(.top, 4)
 
                 VStack(alignment: .leading, spacing: 8) {
                     Text("路由器地址").font(.caption).foregroundStyle(.secondary)
@@ -134,8 +144,9 @@ struct LoginView: View {
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 13)
                 }
-                .buttonStyle(.borderedProminent)
+                .buttonStyle(GlassProminentButtonStyle())
                 .disabled(model.connecting)
+                .opacity(model.connecting ? 0.6 : 1)
 
                 if let error = model.errorMessage {
                     Text(error)
@@ -147,9 +158,11 @@ struct LoginView: View {
                     .font(.caption2)
                     .foregroundStyle(.secondary)
             }
-            .padding(22)
+            .padding(.horizontal, 18)
+            .padding(.vertical, 28)
+            .glassCard(padding: 20, cornerRadius: 28)
         }
-        .background(Color(.systemGroupedBackground))
+        .background(Color.clear)
         .task {
             guard !didAutoConnect else { return }
             didAutoConnect = true

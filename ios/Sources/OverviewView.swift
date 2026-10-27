@@ -16,8 +16,9 @@ struct OverviewView: View {
                 }
                 .padding(16)
             }
-            .background(Color(.systemGroupedBackground))
+            .background(Color.clear)
             .navigationTitle("概览")
+            .toolbarBackground(.hidden, for: .navigationBar)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
@@ -383,7 +384,7 @@ struct InfoRow: View {
 
 extension View {
     func cardStyle() -> some View {
-        padding(14)
-            .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 16))
+        glassCard(padding: 14, cornerRadius: 22)
+    }
     }
 }

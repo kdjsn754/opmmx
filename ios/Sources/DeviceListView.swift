@@ -22,7 +22,11 @@ struct DeviceListView: View {
                 .padding(.vertical, 3)
             }
         }
+        .scrollContentBackground(.hidden)
+        .listRowBackground(Rectangle().fill(.ultraThinMaterial))
+        .background(Color.clear)
         .navigationTitle("连接设备")
         .navigationBarTitleDisplayMode(.inline)
+        .toolbarBackground(.hidden, for: .navigationBar)
     }
 }

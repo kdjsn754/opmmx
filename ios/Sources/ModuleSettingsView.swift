@@ -26,7 +26,11 @@ struct ModuleSettingsView: View {
             }
         }
         .environment(\.editMode, $editMode)
+        .scrollContentBackground(.hidden)
+        .listRowBackground(Rectangle().fill(.ultraThinMaterial))
+        .background(Color.clear)
         .navigationTitle("概览模块")
+        .toolbarBackground(.hidden, for: .navigationBar)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Button("恢复默认") {
