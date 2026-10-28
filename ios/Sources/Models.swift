@@ -3,6 +3,7 @@ import Foundation
 enum OverviewModule: String, CaseIterable, Codable, Identifiable {
     case speed
     case resources
+    case flash
     case hardware
     case devices
     case ports
@@ -16,6 +17,7 @@ enum OverviewModule: String, CaseIterable, Codable, Identifiable {
         switch self {
         case .speed: return "实时速度"
         case .resources: return "资源占用"
+        case .flash: return "闪存"
         case .hardware: return "硬件状态"
         case .devices: return "连接设备"
         case .ports: return "网络端口"
@@ -29,6 +31,7 @@ enum OverviewModule: String, CaseIterable, Codable, Identifiable {
         switch self {
         case .speed: return "上下行速率与速度曲线"
         case .resources: return "CPU 与内存使用率"
+        case .flash: return "系统、应用程序与可用空间"
         case .hardware: return "温度和风扇转速"
         case .devices: return "DHCP 租约设备"
         case .ports: return "LAN 端口和 LAN 桥接"
@@ -42,6 +45,7 @@ enum OverviewModule: String, CaseIterable, Codable, Identifiable {
         switch self {
         case .speed: return "speedometer"
         case .resources: return "cpu"
+        case .flash: return "internaldrive"
         case .hardware: return "thermometer.medium"
         case .devices: return "laptopcomputer.and.iphone"
         case .ports: return "cable.connector"
@@ -168,6 +172,27 @@ struct AccessCheck: Identifiable {
     var latency: Int = 0
     var tested = false
     var history: [Int] = []
+}
+
+struct FlashInfo {
+    var total: UInt64 = 0
+    var systemUsed: UInt64 = 0
+    var appUsed: UInt64 = 0
+    var available: UInt64 = 0
+
+    var hasData: Bool { total > 0 }
+
+    var systemFraction: Double {
+        total > 0 ? min(1, Double(systemUsed) / Double(total)) : 0
+    }
+
+    var appFraction: Double {
+        total > 0 ? min(1, Double(appUsed) / Double(total)) : 0
+    }
+
+    var availableFraction: Double {
+        max(0, 1 - systemFraction - appFraction)
+    }
 }
 
 struct HistoryPoint: Identifiable {

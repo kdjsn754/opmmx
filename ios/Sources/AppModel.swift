@@ -22,6 +22,7 @@ final class AppModel: ObservableObject {
     @Published var status = "未连接"
     @Published var errorMessage: String?
     @Published var stats = OverviewStats()
+    @Published var flashInfo = FlashInfo()
     @Published var routerInfo = RouterInfo()
     @Published var devices: [DeviceInfo] = []
     @Published var ports: [PortInfo] = []
@@ -325,6 +326,7 @@ final class AppModel: ObservableObject {
             if loadValues.count >= 1 { stats.load = loadValues[0] }
             if loadValues.count >= 2 { stats.load5 = loadValues[1] }
             if loadValues.count >= 3 { stats.load15 = loadValues[2] }
+            updateFlash(sections["FLASH"] ?? "")
             updateSensors(temp: sections["TEMP"] ?? "", fan: sections["FAN"] ?? "")
             updateDevices(sections["LEASES"] ?? "")
             updatePorts(ports: sections["PORTS"] ?? "", brif: sections["BRIF"] ?? "")
@@ -553,6 +555,52 @@ final class AppModel: ObservableObject {
         }
         stats.memoryTotal = total
         stats.memoryUsed = total > available ? total - available : 0
+    }
+
+    private func updateFlash(_ text: String) {
+        var total: UInt64 = 0
+        var system: UInt64 = 0
+        var app: UInt64 = 0
+        var available: UInt64 = 0
+
+        for line in text.split(separator: "\n") {
+            let fields = line.split(separator: " ").map(String.init)
+            guard fields.count >= 2 else { continue }
+            switch fields[0] {
+            case "SYS":
+                system = (UInt64(fields[1]) ?? 0) * 1024
+            case "TOTAL" where fields.count >= 6:
+                total = (UInt64(fields[1]) ?? 0) * 1024
+                app = (UInt64(fields[3]) ?? 0) * 1024
+                available = (UInt64(fields[5]) ?? 0) * 1024
+            case "ROOT" where fields.count >= 4:
+                total = (UInt64(fields[1]) ?? 0) * 1024
+                app = (UInt64(fields[2]) ?? 0) * 1024
+                available = (UInt64(fields[3]) ?? 0) * 1024
+            default:
+                break
+            }
+        }
+
+        guard total > 0 else { return }
+        if system == 0 {
+            let remainder = app &+ available
+            system = total > remainder ? total - remainder : 0
+        }
+        if app == 0 {
+            let remainder = system &+ available
+            app = total > remainder ? total - remainder : 0
+        }
+        if available == 0 {
+            let remainder = system &+ app
+            available = total > remainder ? total - remainder : 0
+        }
+        flashInfo = FlashInfo(
+            total: total,
+            systemUsed: system,
+            appUsed: app,
+            available: available
+        )
     }
 
     private func updateNetwork(_ text: String) {
@@ -805,7 +853,14 @@ final class AppModel: ObservableObject {
         let hidden = UserDefaults.standard.stringArray(forKey: "hiddenModules") ?? []
         hiddenModules = Set(hidden.compactMap(OverviewModule.init(rawValue:)))
         let missing = OverviewModule.allCases.filter { !moduleOrder.contains($0) }
-        moduleOrder.append(contentsOf: missing)
+        for module in missing {
+            if module == .flash,
+               let resourcesIndex = moduleOrder.firstIndex(of: .resources) {
+                moduleOrder.insert(.flash, at: resourcesIndex + 1)
+            } else {
+                moduleOrder.append(module)
+            }
+        }
     }
 
     private func saveModules() {
@@ -849,6 +904,10 @@ private extension AppModel {
         echo @@ROUTE; ip route show default 2>/dev/null
         echo @@UPTIME; cat /proc/uptime 2>/dev/null
         echo @@LOAD; cat /proc/loadavg 2>/dev/null
+        echo @@FLASH
+        df -k /rom 2>/dev/null | awk 'NR==2{print "SYS",$3}'
+        df -k /overlay 2>/dev/null | awk 'NR==2{print "TOTAL",$2,"APP",$3,"AVAIL",$4}'
+        df -k / 2>/dev/null | awk 'NR==2{print "ROOT",$2,$3,$4}'
         echo @@TEMP
         for f in /sys/class/thermal/thermal_zone*/temp; do [ -f "$f" ] && echo "T $(cat "$f" 2>/dev/null)"; done
         for f in /sys/class/hwmon/hwmon*/temp*_input; do [ -f "$f" ] && echo "T $(cat "$f" 2>/dev/null)"; done
@@ -927,6 +986,17 @@ func formatBytes(_ value: Double) -> String {
         index += 1
     }
     return String(format: index == 0 ? "%.0f %@" : "%.1f %@", number, units[index])
+}
+
+func formatFlashBytes(_ value: UInt64) -> String {
+    let bytes = Double(value)
+    if bytes >= 1024 * 1024 * 1024 {
+        return String(format: "%.1f GB", bytes / (1024 * 1024 * 1024))
+    }
+    if bytes >= 1024 * 1024 {
+        return String(format: "%.1f MB", bytes / (1024 * 1024))
+    }
+    return String(format: "%.0f KB", bytes / 1024)
 }
 
 func formatSpeed(_ value: Double) -> String {

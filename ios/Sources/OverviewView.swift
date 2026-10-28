@@ -67,6 +67,8 @@ struct OverviewView: View {
             moduleCard(module) { speedContent }
         case .resources:
             resourcesCards
+        case .flash:
+            moduleCard(module) { flashContent }
         case .hardware:
             moduleCard(module) { hardwareContent }
         case .devices:
@@ -193,6 +195,36 @@ struct OverviewView: View {
                 topRight: "可用 \(formatBytes(Double(max(0, model.stats.memoryTotal - model.stats.memoryUsed))))",
                 bottom: "\(formatBytes(Double(model.stats.memoryUsed))) / \(formatBytes(Double(model.stats.memoryTotal)))"
             )
+        }
+    }
+
+    private var flashContent: some View {
+        let info = model.flashInfo
+        return HStack(spacing: 16) {
+            FlashDonut(info: info)
+
+            VStack(spacing: 0) {
+                FlashRow(
+                    label: "系统占用",
+                    used: info.systemUsed,
+                    fraction: info.systemFraction,
+                    color: Color(.systemGray)
+                )
+                Divider()
+                FlashRow(
+                    label: "应用程序占用",
+                    used: info.appUsed,
+                    fraction: info.appFraction,
+                    color: .blue
+                )
+                Divider()
+                FlashRow(
+                    label: "可用",
+                    used: info.available,
+                    fraction: info.availableFraction,
+                    color: Color(.systemGray4)
+                )
+            }
         }
     }
 
@@ -374,6 +406,82 @@ struct InfoRow: View {
                 .minimumScaleFactor(0.8)
         }
         .padding(.vertical, 9)
+    }
+}
+
+private struct FlashDonut: View {
+    let info: FlashInfo
+
+    private var appEnd: Double {
+        min(1, info.systemFraction + info.appFraction)
+    }
+
+    var body: some View {
+        ZStack {
+            Circle()
+                .stroke(Color(.systemGray6), lineWidth: 10)
+
+            Circle()
+                .trim(from: 0, to: info.systemFraction)
+                .stroke(
+                    Color(.systemGray),
+                    style: StrokeStyle(lineWidth: 10, lineCap: .butt)
+                )
+                .rotationEffect(.degrees(-90))
+
+            Circle()
+                .trim(from: info.systemFraction, to: appEnd)
+                .stroke(
+                    Color.blue,
+                    style: StrokeStyle(lineWidth: 10, lineCap: .butt)
+                )
+                .rotationEffect(.degrees(-90))
+
+            Circle()
+                .trim(from: appEnd, to: 1)
+                .stroke(
+                    Color(.systemGray4),
+                    style: StrokeStyle(lineWidth: 10, lineCap: .butt)
+                )
+                .rotationEffect(.degrees(-90))
+
+            Text(info.hasData ? formatFlashBytes(info.total) : "--")
+                .font(.system(size: 12, weight: .semibold, design: .rounded))
+                .monospacedDigit()
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
+                .padding(.horizontal, 8)
+        }
+        .frame(width: 110, height: 110)
+    }
+}
+
+private struct FlashRow: View {
+    let label: String
+    let used: UInt64
+    let fraction: Double
+    let color: Color
+
+    private var percent: Int {
+        Int((max(0, min(1, fraction)) * 100).rounded())
+    }
+
+    var body: some View {
+        HStack(spacing: 7) {
+            Circle()
+                .fill(color)
+                .frame(width: 7, height: 7)
+            Text(label)
+                .font(.caption)
+                .lineLimit(1)
+            Spacer(minLength: 4)
+            Text("\(percent)% (\(formatFlashBytes(used)))")
+                .font(.caption2.monospacedDigit())
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+                .minimumScaleFactor(0.65)
+        }
+        .padding(.vertical, 7)
     }
 }
 

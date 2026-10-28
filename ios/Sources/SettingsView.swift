@@ -84,7 +84,7 @@ struct SettingsView: View {
                 }
 
                 Section("关于") {
-                    LabeledContent("版本", value: "1.8.0")
+                    LabeledContent("版本", value: "1.9.0")
                     LabeledContent("连接方式", value: "SSH 直连")
                     LabeledContent("OpenClash", value: model.openClash.installed ? "已安装" : "未检测到")
                 }
