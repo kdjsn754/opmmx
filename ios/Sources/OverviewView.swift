@@ -419,40 +419,47 @@ private struct FlashDonut: View {
     var body: some View {
         ZStack {
             Circle()
-                .stroke(Color(.systemGray6), lineWidth: 10)
+                .stroke(Color(.systemGray5), lineWidth: 12)
 
             Circle()
                 .trim(from: 0, to: info.systemFraction)
                 .stroke(
                     Color(.systemGray),
-                    style: StrokeStyle(lineWidth: 10, lineCap: .butt)
+                    style: StrokeStyle(lineWidth: 12, lineCap: .round)
                 )
                 .rotationEffect(.degrees(-90))
+                .shadow(color: Color(.systemGray).opacity(0.22), radius: 4)
 
             Circle()
                 .trim(from: info.systemFraction, to: appEnd)
                 .stroke(
                     Color.blue,
-                    style: StrokeStyle(lineWidth: 10, lineCap: .butt)
+                    style: StrokeStyle(lineWidth: 12, lineCap: .round)
                 )
                 .rotationEffect(.degrees(-90))
+                .shadow(color: Color.blue.opacity(0.28), radius: 5)
 
             Circle()
                 .trim(from: appEnd, to: 1)
                 .stroke(
                     Color(.systemGray4),
-                    style: StrokeStyle(lineWidth: 10, lineCap: .butt)
+                    style: StrokeStyle(lineWidth: 12, lineCap: .round)
                 )
                 .rotationEffect(.degrees(-90))
 
-            Text(info.hasData ? formatFlashBytes(info.total) : "--")
-                .font(.system(size: 12, weight: .semibold, design: .rounded))
-                .monospacedDigit()
-                .lineLimit(1)
-                .minimumScaleFactor(0.7)
-                .padding(.horizontal, 8)
+            VStack(spacing: 0) {
+                Text(info.hasData ? formatFlashBytes(info.total) : "--")
+                    .font(.system(size: 15, weight: .semibold, design: .rounded))
+                    .monospacedDigit()
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
+                Text("总大小")
+                    .font(.system(size: 10))
+                    .foregroundStyle(.secondary)
+            }
+            .padding(.horizontal, 10)
         }
-        .frame(width: 110, height: 110)
+        .frame(width: 112, height: 112)
     }
 }
 
@@ -470,18 +477,19 @@ private struct FlashRow: View {
         HStack(spacing: 7) {
             Circle()
                 .fill(color)
-                .frame(width: 7, height: 7)
+                .frame(width: 8, height: 8)
             Text(label)
-                .font(.caption)
+                .font(.subheadline)
                 .lineLimit(1)
+                .minimumScaleFactor(0.8)
             Spacer(minLength: 4)
             Text("\(percent)% (\(formatFlashBytes(used)))")
-                .font(.caption2.monospacedDigit())
+                .font(.caption.monospacedDigit())
                 .foregroundStyle(.secondary)
                 .lineLimit(1)
                 .minimumScaleFactor(0.65)
         }
-        .padding(.vertical, 7)
+        .padding(.vertical, 8)
     }
 }
 
@@ -534,13 +542,13 @@ private struct RingGauge: View {
     var body: some View {
         ZStack {
             Circle()
-                .stroke(Color(.systemGray5), lineWidth: 10)
+                .stroke(Color(.systemGray5), lineWidth: 12)
 
             Circle()
                 .trim(from: 0, to: value / 100)
                 .stroke(
                     accent,
-                    style: StrokeStyle(lineWidth: 10, lineCap: .round)
+                    style: StrokeStyle(lineWidth: 12, lineCap: .round)
                 )
                 .rotationEffect(.degrees(-90))
                 .shadow(color: accent.opacity(0.25), radius: 4)
