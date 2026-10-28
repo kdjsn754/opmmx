@@ -75,6 +75,39 @@ struct MainTabs: View {
                 .tabItem { Label("设置", systemImage: "slider.horizontal.3") }
                 .tag(2)
         }
+        .toolbar(.hidden, for: .tabBar)
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            HStack(spacing: 0) {
+                tabButton(kind: .overview, title: "概览", tag: 0)
+                tabButton(kind: .proxy, title: "网络代理", tag: 1)
+                tabButton(kind: .settings, title: "设置", tag: 2)
+            }
+            .padding(.top, 8)
+            .padding(.bottom, 6)
+            .background(Color(.systemBackground))
+            .overlay(alignment: .top) {
+                Rectangle()
+                    .fill(Color(.separator).opacity(0.55))
+                    .frame(height: 0.5)
+            }
+        }
+    }
+
+    private func tabButton(kind: LineIconKind, title: String, tag: Int) -> some View {
+        let selected = selection == tag
+        return Button {
+            selection = tag
+        } label: {
+            VStack(spacing: 4) {
+                LineIcon(kind: kind, size: 21, color: selected ? .blue : .secondary)
+                Text(title)
+                    .font(.system(size: 10, weight: selected ? .semibold : .regular))
+                    .foregroundStyle(selected ? .blue : .secondary)
+            }
+            .frame(maxWidth: .infinity)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
     }
 }
 

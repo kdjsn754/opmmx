@@ -54,6 +54,20 @@ enum OverviewModule: String, CaseIterable, Codable, Identifiable {
         case .system: return "info.circle"
         }
     }
+
+    var lineIcon: LineIconKind {
+        switch self {
+        case .speed: return .trend
+        case .resources: return .cpu
+        case .flash: return .flash
+        case .hardware: return .hardware
+        case .devices: return .devices
+        case .ports: return .ports
+        case .openclash: return .shield
+        case .trend: return .trend
+        case .system: return .system
+        }
+    }
 }
 
 struct RouterProfile: Codable, Identifiable, Equatable {
