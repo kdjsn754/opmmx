@@ -200,31 +200,25 @@ struct OverviewView: View {
 
     private var flashContent: some View {
         let info = model.flashInfo
-        return HStack(spacing: 16) {
-            FlashDonut(info: info)
-
-            VStack(spacing: 0) {
-                FlashRow(
-                    label: "系统占用",
-                    used: info.systemUsed,
-                    fraction: info.systemFraction,
-                    color: Color(.systemGray)
-                )
-                Divider()
-                FlashRow(
-                    label: "应用程序占用",
-                    used: info.appUsed,
-                    fraction: info.appFraction,
-                    color: .blue
-                )
-                Divider()
-                FlashRow(
-                    label: "可用",
-                    used: info.available,
-                    fraction: info.availableFraction,
-                    color: Color(.systemGray4)
-                )
-            }
+        return VStack(spacing: 14) {
+            FlashBarRow(
+                label: "系统占用",
+                used: info.systemUsed,
+                fraction: info.systemFraction,
+                color: Color(.systemGray)
+            )
+            FlashBarRow(
+                label: "应用程序占用",
+                used: info.appUsed,
+                fraction: info.appFraction,
+                color: .blue
+            )
+            FlashBarRow(
+                label: "可用",
+                used: info.available,
+                fraction: info.availableFraction,
+                color: Color(.systemGray3)
+            )
         }
     }
 
@@ -409,50 +403,7 @@ struct InfoRow: View {
     }
 }
 
-private struct FlashDonut: View {
-    let info: FlashInfo
-
-    private var appEnd: Double {
-        min(1, info.systemFraction + info.appFraction)
-    }
-
-    var body: some View {
-        ZStack {
-            Circle()
-                .stroke(Color(.systemGray5), lineWidth: 12)
-
-            Circle()
-                .trim(from: 0, to: info.systemFraction)
-                .stroke(
-                    Color(.systemGray),
-                    style: StrokeStyle(lineWidth: 12, lineCap: .butt)
-                )
-                .rotationEffect(.degrees(-90))
-                .shadow(color: Color(.systemGray).opacity(0.22), radius: 4)
-
-            Circle()
-                .trim(from: info.systemFraction, to: appEnd)
-                .stroke(
-                    Color.blue,
-                    style: StrokeStyle(lineWidth: 12, lineCap: .butt)
-                )
-                .rotationEffect(.degrees(-90))
-                .shadow(color: Color.blue.opacity(0.28), radius: 5)
-
-            Circle()
-                .trim(from: appEnd, to: 1)
-                .stroke(
-                    Color(.systemGray4),
-                    style: StrokeStyle(lineWidth: 12, lineCap: .butt)
-                )
-                .rotationEffect(.degrees(-90))
-
-        }
-        .frame(width: 112, height: 112)
-    }
-}
-
-private struct FlashRow: View {
+private struct FlashBarRow: View {
     let label: String
     let used: UInt64
     let fraction: Double
@@ -463,22 +414,50 @@ private struct FlashRow: View {
     }
 
     var body: some View {
-        HStack(spacing: 7) {
-            Circle()
-                .fill(color)
-                .frame(width: 8, height: 8)
-            Text(label)
-                .font(.subheadline)
-                .lineLimit(1)
-                .minimumScaleFactor(0.8)
-            Spacer(minLength: 4)
-            Text("\(percent)% (\(formatFlashBytes(used)))")
-                .font(.caption.monospacedDigit())
-                .foregroundStyle(.secondary)
-                .lineLimit(1)
-                .minimumScaleFactor(0.65)
+        VStack(spacing: 7) {
+            HStack(spacing: 7) {
+                Circle()
+                    .fill(color)
+                    .frame(width: 8, height: 8)
+                Text(label)
+                    .font(.subheadline)
+                    .lineLimit(1)
+                Spacer(minLength: 6)
+                Text("\(percent)%")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(color)
+                    .monospacedDigit()
+                Text("(\(formatFlashBytes(used)))")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .monospacedDigit()
+            }
+            LinearGauge(fraction: fraction, color: color)
         }
-        .padding(.vertical, 8)
+    }
+}
+
+private struct LinearGauge: View {
+    let fraction: Double
+    let color: Color
+
+    private var value: CGFloat {
+        CGFloat(max(0, min(1, fraction)))
+    }
+
+    var body: some View {
+        GeometryReader { geometry in
+            ZStack(alignment: .leading) {
+                Capsule()
+                    .fill(Color(.systemGray6))
+
+                Capsule()
+                    .fill(color)
+                    .frame(width: geometry.size.width * value)
+                    .shadow(color: color.opacity(0.22), radius: 4)
+            }
+        }
+        .frame(height: 12)
     }
 }
 
