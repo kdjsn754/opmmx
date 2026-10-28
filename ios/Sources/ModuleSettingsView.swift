@@ -9,8 +9,7 @@ struct ModuleSettingsView: View {
             Section {
                 ForEach(model.moduleOrder) { module in
                     HStack {
-                        LineIcon(kind: module.lineIcon, size: 17, color: .blue)
-                        Text(module.title)
+                        Label(module.title, systemImage: module.icon)
                         Spacer()
                         Toggle("", isOn: Binding(
                             get: { model.isVisible(module) },

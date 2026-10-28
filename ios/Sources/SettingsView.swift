@@ -20,10 +20,7 @@ struct SettingsView: View {
                     NavigationLink {
                         ModuleSettingsView()
                     } label: {
-                        HStack(spacing: 8) {
-                            LineIcon(kind: .overview, size: 17, color: .blue)
-                            Text("管理概览模块")
-                        }
+                        Label("管理概览模块", systemImage: "square.grid.2x2")
                     }
                 }
 
@@ -87,7 +84,7 @@ struct SettingsView: View {
                 }
 
                 Section("关于") {
-                    LabeledContent("版本", value: "1.11.0")
+                    LabeledContent("版本", value: "1.12.0")
                     LabeledContent("连接方式", value: "SSH 直连")
                     LabeledContent("OpenClash", value: model.openClash.installed ? "已安装" : "未检测到")
                 }

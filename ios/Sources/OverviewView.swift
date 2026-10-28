@@ -113,12 +113,9 @@ struct OverviewView: View {
         @ViewBuilder content: () -> Content
     ) -> some View {
         VStack(alignment: .leading, spacing: 12) {
-            HStack(spacing: 7) {
-                LineIcon(kind: module.lineIcon, size: 17, color: .blue)
-                Text(module.title)
-                    .font(.headline)
-                    .foregroundStyle(.primary)
-            }
+            Label(module.title, systemImage: module.icon)
+                .font(.headline)
+                .foregroundStyle(.primary)
             content()
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -178,7 +175,7 @@ struct OverviewView: View {
         HStack(alignment: .top, spacing: 12) {
             ResourceRingCard(
                 title: "CPU",
-                icon: .cpu,
+                icon: "cpu",
                 accent: .orange,
                 percent: model.stats.cpu,
                 topRight: model.routerInfo.cpuCores > 0
@@ -192,7 +189,7 @@ struct OverviewView: View {
             )
             ResourceRingCard(
                 title: "内存",
-                icon: .memory,
+                icon: "memorychip",
                 accent: .indigo,
                 percent: model.memoryFraction * 100,
                 topRight: "可用 \(formatBytes(Double(max(0, model.stats.memoryTotal - model.stats.memoryUsed))))",
@@ -234,13 +231,13 @@ struct OverviewView: View {
     private var hardwareContent: some View {
         HStack(spacing: 12) {
             hardwareTile(
-                icon: .thermometer,
+                icon: "thermometer.medium",
                 title: "温度",
                 value: model.stats.temperature.map { String(format: "%.1f °C", $0) } ?? "无传感器",
                 color: .orange
             )
             hardwareTile(
-                icon: .fan,
+                icon: "fanblades",
                 title: "风扇",
                 value: model.stats.fanRPM.map { String(format: "%.0f RPM", $0) } ?? "无传感器",
                 color: .teal
@@ -248,9 +245,11 @@ struct OverviewView: View {
         }
     }
 
-    private func hardwareTile(icon: LineIconKind, title: String, value: String, color: Color) -> some View {
+    private func hardwareTile(icon: String, title: String, value: String, color: Color) -> some View {
         HStack(spacing: 9) {
-            LineIcon(kind: icon, size: 20, color: color)
+            Image(systemName: icon)
+                .font(.title3)
+                .foregroundStyle(color)
             VStack(alignment: .leading, spacing: 2) {
                 Text(title).font(.caption2).foregroundStyle(.secondary)
                 Text(value).font(.subheadline.weight(.semibold))
@@ -426,7 +425,7 @@ private struct FlashDonut: View {
                 .trim(from: 0, to: info.systemFraction)
                 .stroke(
                     Color(.systemGray),
-                    style: StrokeStyle(lineWidth: 12, lineCap: .round)
+                    style: StrokeStyle(lineWidth: 12, lineCap: .butt)
                 )
                 .rotationEffect(.degrees(-90))
                 .shadow(color: Color(.systemGray).opacity(0.22), radius: 4)
@@ -435,7 +434,7 @@ private struct FlashDonut: View {
                 .trim(from: info.systemFraction, to: appEnd)
                 .stroke(
                     Color.blue,
-                    style: StrokeStyle(lineWidth: 12, lineCap: .round)
+                    style: StrokeStyle(lineWidth: 12, lineCap: .butt)
                 )
                 .rotationEffect(.degrees(-90))
                 .shadow(color: Color.blue.opacity(0.28), radius: 5)
@@ -444,21 +443,10 @@ private struct FlashDonut: View {
                 .trim(from: appEnd, to: 1)
                 .stroke(
                     Color(.systemGray4),
-                    style: StrokeStyle(lineWidth: 12, lineCap: .round)
+                    style: StrokeStyle(lineWidth: 12, lineCap: .butt)
                 )
                 .rotationEffect(.degrees(-90))
 
-            VStack(spacing: 2) {
-                Text(info.hasData ? formatFlashBytes(info.total) : "--")
-                    .font(.system(size: 16, weight: .semibold, design: .rounded))
-                    .monospacedDigit()
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.65)
-                Text("总容量")
-                    .font(.system(size: 10))
-                    .foregroundStyle(.secondary)
-            }
-            .padding(.horizontal, 6)
         }
         .frame(width: 112, height: 112)
     }
@@ -496,7 +484,7 @@ private struct FlashRow: View {
 
 private struct ResourceRingCard: View {
     let title: String
-    let icon: LineIconKind
+    let icon: String
     let accent: Color
     let percent: Double
     let topRight: String
@@ -505,7 +493,9 @@ private struct ResourceRingCard: View {
     var body: some View {
         VStack(spacing: 10) {
             HStack(spacing: 5) {
-                LineIcon(kind: icon, size: 14, color: accent)
+                Image(systemName: icon)
+                    .font(.caption)
+                    .foregroundStyle(accent)
                 Text(title)
                     .font(.subheadline.weight(.semibold))
                 Spacer(minLength: 4)
