@@ -4,7 +4,9 @@ struct SettingsView: View {
     @EnvironmentObject private var model: AppModel
     @AppStorage("themeMode") private var themeMode = "system"
     @State private var confirmLogout = false
-    @State private var showNewConnection = false
+    @State private var showEditor = false
+    @State private var editProfile: RouterProfile? = nil
+    @State private var showRouterWeb = false
 
     var body: some View {
         NavigationStack {
@@ -59,7 +61,21 @@ struct SettingsView: View {
                     }
 
                     Button {
-                        showNewConnection = true
+                        editProfile = model.currentProfile
+                        showEditor = true
+                    } label: {
+                        Label("编辑当前连接", systemImage: "pencil")
+                    }
+
+                    Button {
+                        showRouterWeb = true
+                    } label: {
+                        Label("打开路由器网页后台", systemImage: "safari")
+                    }
+
+                    Button {
+                        editProfile = nil
+                        showEditor = true
                     } label: {
                         Label("新建连接", systemImage: "plus.circle")
                     }
@@ -84,7 +100,7 @@ struct SettingsView: View {
                 }
 
                 Section("关于") {
-                    LabeledContent("版本", value: "1.12.1")
+                    LabeledContent("版本", value: "1.13.0")
                     LabeledContent("连接方式", value: "SSH 直连")
                     LabeledContent("OpenClash", value: model.openClash.installed ? "已安装" : "未检测到")
                 }
@@ -94,8 +110,18 @@ struct SettingsView: View {
             .background(Color.clear)
             .navigationTitle("设置")
             .toolbarBackground(.hidden, for: .navigationBar)
-            .sheet(isPresented: $showNewConnection) {
-                NewConnectionView()
+            .sheet(isPresented: $showEditor) {
+                ConnectionEditorView(profile: editProfile)
+            }
+            .sheet(isPresented: $showRouterWeb) {
+                if let url = model.routerWebURL {
+                    PanelView(
+                        url: url,
+                        title: "路由器网页后台",
+                        autoLoginUser: model.currentProfile?.user,
+                        autoLoginPassword: model.currentPassword
+                    )
+                }
             }
             .confirmationDialog("退出后需要重新输入密码", isPresented: $confirmLogout, titleVisibility: .visible) {
                 Button("断开并清除密码", role: .destructive) {
@@ -107,24 +133,40 @@ struct SettingsView: View {
     }
 }
 
-private struct NewConnectionView: View {
+private struct ConnectionEditorView: View {
+    let profile: RouterProfile?
     @EnvironmentObject private var model: AppModel
     @Environment(\.dismiss) private var dismiss
-    @State private var label = ""
-    @State private var host = ""
-    @State private var port = "22"
-    @State private var user = "root"
-    @State private var password = ""
+    @State private var label: String
+    @State private var host: String
+    @State private var port: String
+    @State private var webPort: String
+    @State private var user: String
+    @State private var password: String
+
+    init(profile: RouterProfile?) {
+        self.profile = profile
+        _label = State(initialValue: profile?.label ?? "")
+        _host = State(initialValue: profile?.host ?? "")
+        _port = State(initialValue: String(profile?.port ?? 22))
+        _webPort = State(initialValue: String(profile?.webPortValue ?? 80))
+        _user = State(initialValue: profile?.user ?? "root")
+        _password = State(initialValue: profile.flatMap {
+            KeychainStore.loadPassword(account: KeychainStore.passwordAccount(for: $0))
+        } ?? "")
+    }
 
     var body: some View {
         NavigationStack {
             Form {
                 Section("连接信息") {
-                    TextField("名称（可选）", text: $label)
+                    TextField("连接名称（可选）", text: $label)
                     TextField("路由器地址", text: $host)
                         .textInputAutocapitalization(.never)
                         .keyboardType(.URL)
                     TextField("SSH 端口", text: $port)
+                        .keyboardType(.numberPad)
+                    TextField("网页后台端口（LuCI）", text: $webPort)
                         .keyboardType(.numberPad)
                     TextField("用户名", text: $user)
                         .textInputAutocapitalization(.never)
@@ -134,13 +176,28 @@ private struct NewConnectionView: View {
                 Section {
                     Button {
                         Task {
-                            await model.saveNewProfile(
-                                host: host,
-                                port: Int(port) ?? 22,
-                                user: user,
-                                password: password,
-                                label: label
-                            )
+                            let sshPort = Int(port) ?? 22
+                            let web = Int(webPort) ?? 80
+                            if let profile {
+                                await model.updateProfile(
+                                    profile,
+                                    host: host,
+                                    port: sshPort,
+                                    user: user,
+                                    password: password,
+                                    label: label,
+                                    webPort: web
+                                )
+                            } else {
+                                await model.saveNewProfile(
+                                    host: host,
+                                    port: sshPort,
+                                    user: user,
+                                    password: password,
+                                    label: label,
+                                    webPort: web
+                                )
+                            }
                             if model.connected { dismiss() }
                         }
                     } label: {
@@ -159,7 +216,7 @@ private struct NewConnectionView: View {
                     }
                 }
             }
-            .navigationTitle("新建连接")
+            .navigationTitle(profile == nil ? "新建连接" : "编辑连接")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {

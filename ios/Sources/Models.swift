@@ -62,9 +62,14 @@ struct RouterProfile: Codable, Identifiable, Equatable {
     var host: String
     var port: Int
     var user: String
+    var webPort: Int? = nil
 
     var title: String { label.isEmpty ? host : label }
     var subtitle: String { "\(user)@\(host):\(port)" }
+    var webPortValue: Int {
+        guard let webPort, (1...65535).contains(webPort) else { return 80 }
+        return webPort
+    }
 }
 
 struct DeviceInfo: Identifiable {

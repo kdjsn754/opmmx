@@ -28,19 +28,29 @@ struct RootView: View {
                     LoginView()
                 }
             }
-            if model.reconnecting {
-                VStack {
-                    HStack(spacing: 8) {
+            if model.reconnecting || model.activityTitle != nil {
+                ZStack {
+                    Color.black.opacity(0.18)
+                        .ignoresSafeArea()
+                    VStack(spacing: 10) {
                         ProgressView()
-                        Text("正在恢复连接…")
+                            .tint(.blue)
+                        Text(model.reconnecting
+                             ? "正在恢复连接"
+                             : (model.activityTitle ?? "正在处理"))
+                            .font(.headline)
+                        Text(model.reconnecting
+                             ? "正在重新建立 SSH 会话…"
+                             : (model.activitySubtitle ?? ""))
                             .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .multilineTextAlignment(.center)
                     }
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 9)
-                    .glassCard(padding: 0, cornerRadius: 18)
-                    .padding(.top, 8)
-                    Spacer()
+                    .frame(width: 230)
+                    .padding(.vertical, 22)
+                    .glassCard(padding: 0, cornerRadius: 22)
                 }
+                .transition(.opacity)
             }
         }
         .preferredColorScheme(colorScheme)

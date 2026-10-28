@@ -18,6 +18,8 @@ final class AppModel: ObservableObject {
     @Published var connected = false
     @Published var connecting = false
     @Published var reconnecting = false
+    @Published var activityTitle: String?
+    @Published var activitySubtitle: String?
     @Published var busy = false
     @Published var status = "未连接"
     @Published var errorMessage: String?
@@ -90,7 +92,7 @@ final class AppModel: ObservableObject {
     // MARK: - Connections
 
     func connect(host: String, port: Int, user: String, password: String,
-                 label: String = "") async {
+                 label: String = "", webPort: Int = 80) async {
         let cleanHost = host.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !cleanHost.isEmpty, !password.isEmpty else {
             errorMessage = "请填写路由器地址和密码"
@@ -98,13 +100,16 @@ final class AppModel: ObservableObject {
         }
 
         var profile: RouterProfile
-        if let existing = profiles.first(where: {
+        if let index = profiles.firstIndex(where: {
             $0.host == cleanHost && $0.port == port && $0.user == user
         }) {
-            profile = existing
+            profile = profiles[index]
             if !label.isEmpty { profile.label = label }
+            profile.webPort = webPort
+            profiles[index] = profile
         } else {
-            profile = RouterProfile(label: label, host: cleanHost, port: port, user: user)
+            profile = RouterProfile(label: label, host: cleanHost, port: port,
+                                    user: user, webPort: webPort)
             profiles.append(profile)
         }
         currentProfileID = profile.id
@@ -175,8 +180,45 @@ final class AppModel: ObservableObject {
     }
 
     func saveNewProfile(host: String, port: Int, user: String,
-                        password: String, label: String) async {
-        await connect(host: host, port: port, user: user, password: password, label: label)
+                        password: String, label: String, webPort: Int = 80) async {
+        await connect(host: host, port: port, user: user, password: password,
+                      label: label, webPort: webPort)
+    }
+
+    func updateProfile(_ profile: RouterProfile, host: String, port: Int,
+                       user: String, password: String, label: String,
+                       webPort: Int) async {
+        guard let index = profiles.firstIndex(where: { $0.id == profile.id }) else { return }
+        var updated = profiles[index]
+        let cleanHost = host.trimmingCharacters(in: .whitespacesAndNewlines)
+        updated.host = cleanHost
+        updated.port = port
+        updated.user = user
+        updated.label = label.trimmingCharacters(in: .whitespacesAndNewlines)
+        updated.webPort = webPort
+        profiles[index] = updated
+        currentProfileID = updated.id
+        saveProfiles()
+        if autoLogin {
+            KeychainStore.savePassword(
+                password,
+                account: KeychainStore.passwordAccount(for: updated)
+            )
+        }
+        await connect(profile: updated, password: password)
+    }
+
+    var currentPassword: String? {
+        if let activePassword { return activePassword }
+        guard let currentProfile else { return nil }
+        return KeychainStore.loadPassword(
+            account: KeychainStore.passwordAccount(for: currentProfile)
+        )
+    }
+
+    var routerWebURL: URL? {
+        guard let profile = currentProfile else { return nil }
+        return URL(string: "http://\(profile.host):\(profile.webPortValue)/")
     }
 
     func deleteProfile(_ profile: RouterProfile) {
@@ -409,7 +451,8 @@ final class AppModel: ObservableObject {
             status = "OpenClash 已启动"
             return
         }
-        await action("uci -q set openclash.config.enable='1'; uci -q commit openclash; /etc/init.d/openclash start >/dev/null 2>&1; echo done")
+        await action("uci -q set openclash.config.enable='1'; uci -q commit openclash; /etc/init.d/openclash start >/dev/null 2>&1; echo done",
+                     title: "正在启动", subtitle: "正在启动 OpenClash…")
     }
 
     func stopOpenClash() async {
@@ -418,25 +461,35 @@ final class AppModel: ObservableObject {
             status = "OpenClash 已关闭"
             return
         }
-        await action("uci -q set openclash.config.enable='0'; uci -q commit openclash; /etc/init.d/openclash stop >/dev/null 2>&1; echo done")
+        await action("uci -q set openclash.config.enable='0'; uci -q commit openclash; /etc/init.d/openclash stop >/dev/null 2>&1; echo done",
+                     title: "正在关闭", subtitle: "正在停止 OpenClash…")
     }
 
     func restartOpenClash() async {
-        await action("uci -q set openclash.config.enable='1'; uci -q commit openclash; /etc/init.d/openclash restart >/dev/null 2>&1; echo done")
+        await action("uci -q set openclash.config.enable='1'; uci -q commit openclash; /etc/init.d/openclash restart >/dev/null 2>&1; echo done",
+                     title: "正在重启", subtitle: "正在重启 OpenClash…")
     }
 
     func switchMode(_ mode: String) async {
-        await action("uci -q set openclash.config.proxy_mode='\(mode)'; uci -q set 'openclash.@overwrite[0].proxy_mode'='\(mode)'; uci -q commit openclash; /etc/init.d/openclash restart >/dev/null 2>&1; echo done")
+        await action("uci -q set openclash.config.proxy_mode='\(mode)'; uci -q set 'openclash.@overwrite[0].proxy_mode'='\(mode)'; uci -q commit openclash; /etc/init.d/openclash restart >/dev/null 2>&1; echo done",
+                     title: "正在切换模式", subtitle: "正在应用新的代理模式…")
     }
 
     func switchConfig(_ name: String) async {
         guard !name.isEmpty, !name.contains("'") else { return }
-        await action("uci -q set openclash.config.config_path='/etc/openclash/config/\(name)'; uci -q set openclash.config.enable='1'; uci -q commit openclash; /etc/init.d/openclash restart >/dev/null 2>&1; echo done")
+        await action("uci -q set openclash.config.config_path='/etc/openclash/config/\(name)'; uci -q set openclash.config.enable='1'; uci -q commit openclash; /etc/init.d/openclash restart >/dev/null 2>&1; echo done",
+                     title: "正在切换配置", subtitle: "正在应用新的配置文件…")
     }
 
-    private func action(_ command: String) async {
+    private func action(_ command: String, title: String, subtitle: String) async {
         busy = true
-        defer { busy = false }
+        activityTitle = title
+        activitySubtitle = subtitle
+        defer {
+            busy = false
+            activityTitle = nil
+            activitySubtitle = nil
+        }
         do {
             _ = try await execute(command)
             try? await Task.sleep(for: .seconds(2))

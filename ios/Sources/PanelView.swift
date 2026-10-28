@@ -1,8 +1,12 @@
 import SwiftUI
 import WebKit
+import Foundation
 
 struct PanelView: View {
     let url: URL
+    var title: String = "控制面板"
+    var autoLoginUser: String? = nil
+    var autoLoginPassword: String? = nil
     @Environment(\.dismiss) private var dismiss
     @State private var progress: Double = 0
     @State private var error: String?
@@ -10,7 +14,13 @@ struct PanelView: View {
     var body: some View {
         NavigationStack {
             ZStack(alignment: .top) {
-                PanelWebView(url: url, progress: $progress, error: $error)
+                PanelWebView(
+                    url: url,
+                    progress: $progress,
+                    error: $error,
+                    autoLoginUser: autoLoginUser,
+                    autoLoginPassword: autoLoginPassword
+                )
                 if progress > 0 && progress < 1 {
                     ProgressView(value: progress)
                         .progressViewStyle(.linear)
@@ -28,7 +38,7 @@ struct PanelView: View {
                     .background(Color(.systemGroupedBackground))
                 }
             }
-            .navigationTitle("控制面板")
+            .navigationTitle(title)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
@@ -54,6 +64,8 @@ private struct PanelWebView: UIViewRepresentable {
     let url: URL
     @Binding var progress: Double
     @Binding var error: String?
+    var autoLoginUser: String?
+    var autoLoginPassword: String?
 
     func makeCoordinator() -> Coordinator { Coordinator(self) }
 
@@ -78,12 +90,17 @@ private struct PanelWebView: UIViewRepresentable {
     final class Coordinator: NSObject, WKNavigationDelegate {
         private let progress: Binding<Double>
         private let error: Binding<String?>
+        private let autoLoginUser: String?
+        private let autoLoginPassword: String?
         weak var webView: WKWebView?
         private var observer: NSObjectProtocol?
+        private var autoLoginAttempts = 0
 
         init(_ parent: PanelWebView) {
             self.progress = parent.$progress
             self.error = parent.$error
+            self.autoLoginUser = parent.autoLoginUser
+            self.autoLoginPassword = parent.autoLoginPassword
         }
 
         func observe() {
@@ -104,6 +121,7 @@ private struct PanelWebView: UIViewRepresentable {
 
         func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
             progress.wrappedValue = 1
+            attemptAutoLogin()
         }
 
         func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
@@ -114,6 +132,46 @@ private struct PanelWebView: UIViewRepresentable {
         func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
             self.error.wrappedValue = error.localizedDescription
             progress.wrappedValue = 0
+        }
+
+        private func attemptAutoLogin() {
+            guard let webView,
+                  let user = autoLoginUser, !user.isEmpty,
+                  let password = autoLoginPassword, !password.isEmpty,
+                  autoLoginAttempts < 2 else { return }
+            autoLoginAttempts += 1
+
+            let delay = 0.35 * Double(autoLoginAttempts)
+            DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self, weak webView] in
+                guard let self, let webView else { return }
+                let script = """
+                (function(){
+                  var u=document.querySelector('input[name="luci_username"]')||document.querySelector('input[name="username"]');
+                  var p=document.querySelector('input[name="luci_password"]')||document.querySelector('input[name="password"]');
+                  if(!u||!p||!u.form){return false;}
+                  u.value=\(Self.jsString(user));
+                  p.value=\(Self.jsString(password));
+                  u.form.submit();
+                  return true;
+                })();
+                """
+                webView.evaluateJavaScript(script) { result, _ in
+                    if (result as? Bool) != true {
+                        self.attemptAutoLogin()
+                    }
+                }
+            }
+        }
+
+        private static func jsString(_ value: String) -> String {
+            guard let data = try? JSONSerialization.data(
+                withJSONObject: [value],
+                options: []
+            ), let json = String(data: data, encoding: .utf8),
+               json.count >= 2 else {
+                return "\"\""
+            }
+            return String(json.dropFirst().dropLast())
         }
 
         deinit {
